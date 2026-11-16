@@ -46,7 +46,7 @@
             <div style="margin-top: 10px;">
                 Rozlišení videa: <input type="number" id="videoWidth" value="1920" min="2" step="1" style="width: 70px;"> x
                 <input type="number" id="videoHeight" value="1080" min="2" step="1" style="width: 70px;"><br>
-                Síla rozmazání: <input type="number" id="blurRadius" value="13" min="0" step="1" style="width: 60px;">
+                Síla rozmazání: <input type="number" id="blurRadius" value="20" min="0" step="1" style="width: 60px;">
             </div>
         </div>
 
@@ -61,6 +61,7 @@
         </div>
     </div>
 
+    <p class="preview-note">Rozmazání v náhledu je orientační; výsledný obraz zpracuje FFmpeg.</p>
     <div id="stageWrapper">
         <img id="bg" src="template.png" alt="Ukázkový obrázek" draggable="false">
         <video id="previewVideo" muted playsinline preload="auto" hidden></video>

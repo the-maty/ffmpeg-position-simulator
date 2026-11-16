@@ -106,6 +106,25 @@ function fileName(inputId, extId) {
     return (name.toLowerCase().endsWith(ext.toLowerCase()) ? name : name + ext);
 }
 
+// CSS používá gaussovské rozostření; přepočet přibližuje jeden průchod boxblur.
+function updateBlurPreview() {
+    const videoW = Number(document.getElementById("videoWidth").value);
+    const videoH = Number(document.getElementById("videoHeight").value);
+    const requested = Number(document.getElementById("blurRadius").value);
+    if (!(videoW >= 2 && videoH >= 2 && Number.isFinite(requested))) {
+        sel.style.setProperty("--preview-blur", "0px");
+        return;
+    }
+    const x = Math.min(Math.floor(selection.x * videoW / 2) * 2, Math.floor((videoW - 2) / 2) * 2);
+    const y = Math.min(Math.floor(selection.y * videoH / 2) * 2, Math.floor((videoH - 2) / 2) * 2);
+    const right = Math.min(Math.ceil((selection.x + selection.w) * videoW / 2) * 2, Math.floor(videoW / 2) * 2);
+    const bottom = Math.min(Math.ceil((selection.y + selection.h) * videoH / 2) * 2, Math.floor(videoH / 2) * 2);
+    const limit = Math.floor(Math.min(Math.max(2, right - x), Math.max(2, bottom - y)) / 4);
+    const radius = clamp(Math.floor(requested), 0, limit);
+    const scale = stage.getBoundingClientRect().width / videoW;
+    sel.style.setProperty("--preview-blur", `${radius * scale / Math.sqrt(3)}px`);
+}
+
 function generateCommand() {
     const videoW = Number(document.getElementById("videoWidth").value);
     const videoH = Number(document.getElementById("videoHeight").value);
@@ -119,6 +138,7 @@ function generateCommand() {
     }
     stage.style.aspectRatio = `${videoW} / ${videoH}`;
     stage.style.width = `min(100%, ${500 * videoW / videoH}px)`;
+    updateBlurPreview();
 
     // FFmpeg dosadí rozměry skutečně dekódovaného snímku, ne rozměry displeje
     // ani rozměry náhledu, které mohou zohledňovat poměr stran pixelů.
@@ -158,4 +178,6 @@ document.getElementById("copyBtn").addEventListener("click", async function () {
         setTimeout(() => { this.innerText = "Zkopírovat příkaz"; }, 2000);
     }
 });
+if (typeof ResizeObserver !== "undefined") new ResizeObserver(updateBlurPreview).observe(stage);
+else window.addEventListener("resize", updateBlurPreview);
 generateCommand();
