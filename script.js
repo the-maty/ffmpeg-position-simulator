@@ -133,7 +133,8 @@ function updateBlurPreview() {
     const y = Math.min(Math.floor(selection.y * videoH / 2) * 2, Math.floor((videoH - 2) / 2) * 2);
     const right = Math.min(Math.ceil((selection.x + selection.w) * videoW / 2) * 2, Math.floor(videoW / 2) * 2);
     const bottom = Math.min(Math.ceil((selection.y + selection.h) * videoH / 2) * 2, Math.floor(videoH / 2) * 2);
-    const limit = Math.floor(Math.min(Math.max(2, right - x), Math.max(2, bottom - y)) / 4);
+    const minDimension = Math.min(Math.max(2, right - x), Math.max(2, bottom - y));
+    const limit = Math.max(0, Math.floor((Math.floor(minDimension / 2) - 1) / 2));
     const radius = clamp(Math.floor(requested), 0, limit);
     const scale = stage.getBoundingClientRect().width / videoW;
     sel.style.setProperty("--preview-blur", `${radius * scale / Math.sqrt(3)}px`);
@@ -177,7 +178,7 @@ function generateCommand() {
         output.value = "Zadejte platný datový tok vstupního videa v bps (alespoň 2).";
         return;
     }
-    const filter = `[0:v]crop=w=${w}:h=${h}:x=${x}:y=${y},boxblur=luma_radius=min(${radius}\\,floor(min(w\\,h)/4)):luma_power=1[blur];[0:v][blur]overlay=x=${overlayX}:y=${overlayY},format=yuv420p[vout]`;
+    const filter = `[0:v]crop=w=${w}:h=${h}:x=${x}:y=${y},boxblur=luma_radius=min(${radius}\\,floor((min(cw\\,ch)-1)/2)):luma_power=1[blur];[0:v][blur]overlay=x=${overlayX}:y=${overlayY},format=yuv420p[vout]`;
     const encoder = `ffmpeg -i ${shellQuote(videoName)} -filter_complex ${shellQuote(filter)} -map '[vout]' -map '0:a?' -c:v hevc_videotoolbox -b:v`;
     if (mode === "manual") {
         output.value = `${encoder} ${Math.floor(Number(rawBitrate) * 0.8)} -c:a copy ${shellQuote(outputName)}`;
