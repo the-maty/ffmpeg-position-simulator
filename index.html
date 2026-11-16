@@ -16,6 +16,12 @@
         <div class="control-group">
             <strong>Nastavení souborů a videa:</strong><br>
             
+            <div class="file-picker">
+                <label for="videoFile">Vybrat lokální video pro náhled:</label>
+                <input type="file" id="videoFile" accept="video/*,.mkv,.mov,.mp4,.webm,.avi">
+                <small id="fileStatus">Soubor zůstává ve vašem prohlížeči, nikam se nenahrává.</small>
+            </div>
+
             <div class="input-row">
                 <span class="input-label">Video file:</span>
                 <input type="text" id="videoName" value="input" class="full-width" placeholder="Název bez koncovky">
@@ -23,6 +29,8 @@
                     <option value=".mkv">.mkv</option>
                     <option value=".mp4">.mp4</option>
                     <option value=".mov">.mov</option>
+                    <option value=".webm">.webm</option>
+                    <option value=".avi">.avi</option>
                 </select>
             </div>
             
@@ -36,9 +44,9 @@
             </div>
             
             <div style="margin-top: 10px;">
-                Rozlišení videa: <input type="number" id="videoWidth" value="1920" style="width: 70px;"> x 
-                <input type="number" id="videoHeight" value="1080" style="width: 70px;"><br>
-                Síla rozmazání: <input type="number" id="blurRadius" value="13" style="width: 60px;">
+                Rozlišení videa: <input type="number" id="videoWidth" value="1920" min="2" step="1" style="width: 70px;"> x
+                <input type="number" id="videoHeight" value="1080" min="2" step="1" style="width: 70px;"><br>
+                Síla rozmazání: <input type="number" id="blurRadius" value="13" min="0" step="1" style="width: 60px;">
             </div>
         </div>
 
@@ -54,7 +62,8 @@
     </div>
 
     <div id="stageWrapper">
-        <img id="bg" src="template.png" alt="Template" draggable="false">
+        <img id="bg" src="template.png" alt="Ukázkový obrázek" draggable="false">
+        <video id="previewVideo" muted playsinline preload="metadata" hidden></video>
         <div id="selection"></div>
     </div>
 

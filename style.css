@@ -57,28 +57,38 @@ input[type="text"], input[type="number"] {
 }
 input[readonly] { background: #000; color: #aaa; }
 input:focus { outline: 1px solid var(--accent); }
-#stageWrapper { 
-    position: relative; 
-    display: inline-block; 
-    border: 2px solid var(--border); 
+#stageWrapper {
+    position: relative;
+    margin: 0 auto;
+    outline: 2px solid var(--border);
     background: #000;
-    border-radius: 4px;
     overflow: hidden;
-    min-width: 300px;
-    min-height: 200px;
+    max-width: 100%;
+    touch-action: none;
 }
-#bg { 
-    max-width: 100%; 
-    display: block; 
-    user-select: none; /* Zabrání "zmodrání" při klikání */
-    -webkit-user-drag: none; /* Tvrdý zákaz tažení pro Chrome/Safari */
+#bg, #previewVideo {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
 }
+#bg[hidden], #previewVideo[hidden] { display: none; }
+.file-picker { margin-top: 10px; }
+.file-picker label, .file-picker small { display: block; }
+.file-picker input { margin: 8px 0; max-width: 100%; }
+.file-picker small { color: #aaa; }
 #selection { 
     position: absolute; 
     border: 2px dashed var(--accent); 
     background: rgba(0, 255, 102, 0.2); 
     cursor: move; 
     box-sizing: border-box;
+    touch-action: none;
 }
 textarea { 
     width: 100%; 
@@ -148,4 +158,12 @@ button:active { transform: scale(0.98); }
 .footer a:hover {
     text-decoration: underline;
     opacity: 0.8;
+}.resizer {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 12px;
+    height: 12px;
+    background: var(--accent);
+    cursor: nwse-resize;
 }
