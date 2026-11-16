@@ -81,7 +81,7 @@ input:focus { outline: 1px solid var(--accent); }
 .file-picker { margin-top: 10px; }
 .file-picker label, .file-picker small { display: block; }
 .file-picker input { margin: 8px 0; max-width: 100%; }
-.file-picker small { color: #aaa; }
+.file-picker small { color: #ccc; line-height: 1.5; overflow-wrap: anywhere; }
 #selection { 
     position: absolute; 
     border: 2px dashed var(--accent); 

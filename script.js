@@ -5,6 +5,7 @@ const stage = document.getElementById("stageWrapper");
 const fileStatus = document.getElementById("fileStatus");
 let videoUrl = null;
 let interaction = null;
+let selectedFileName = "";
 
 // Výběr je uložen jako podíl celého snímku, nezávisle na velikosti náhledu.
 const selection = { x: 0.1, y: 0.1, w: 0.2, h: 0.15 };
@@ -52,34 +53,41 @@ document.getElementById("videoFile").addEventListener("change", event => {
     if (!file) return;
     if (videoUrl) URL.revokeObjectURL(videoUrl);
     videoUrl = URL.createObjectURL(file);
+    selectedFileName = file.name;
     const match = file.name.match(/^(.*)(\.[^.]+)$/);
     const ext = match ? match[2].toLowerCase() : "";
     const extSelect = document.getElementById("videoExt");
-    if (ext && !Array.from(extSelect.options).some(option => option.value === ext)) {
-        extSelect.add(new Option(ext, ext));
+    if (!Array.from(extSelect.options).some(option => option.value === ext)) {
+        extSelect.add(new Option(ext || "bez přípony", ext));
     }
-    if (ext) extSelect.value = ext;
-    document.getElementById("videoName").value = match ? match[1] : file.name;
+    extSelect.value = ext;
+    const baseName = match ? match[1] : file.name;
+    document.getElementById("videoName").value = baseName;
+    document.getElementById("outputName").value = `${baseName}_blurred`;
+    document.getElementById("outputExt").value = ext === ".mp4" ? ".mp4" : ".mkv";
     bg.hidden = false;
     video.hidden = true;
-    fileStatus.textContent = "Načítání metadat lokálního souboru…";
+    fileStatus.textContent = `Vybráno: ${file.name}. Zjišťuji rozlišení a načítám náhled…`;
     video.src = videoUrl;
     video.load();
     generateCommand();
 });
 video.addEventListener("loadedmetadata", () => {
-    if (!video.videoWidth || !video.videoHeight) return;
+    if (!video.videoWidth || !video.videoHeight) {
+        fileStatus.textContent = `Vybráno: ${selectedFileName}. Rozlišení se nepodařilo zjistit; zadejte ho ručně.`;
+        return;
+    }
     document.getElementById("videoWidth").value = video.videoWidth;
     document.getElementById("videoHeight").value = video.videoHeight;
     bg.hidden = true;
     video.hidden = false;
-    fileStatus.textContent = "Video bylo načteno lokálně; soubor se nikam nenahrává.";
+    fileStatus.textContent = `Vybráno: ${selectedFileName} · Rozlišení: ${video.videoWidth} × ${video.videoHeight} px. Video zůstává v prohlížeči.`;
     generateCommand();
 });
 video.addEventListener("error", () => {
     bg.hidden = false;
     video.hidden = true;
-    fileStatus.textContent = "Prohlížeč toto video neumí načíst. Rozlišení zadejte ručně; soubor se nikam nenahrává.";
+    fileStatus.textContent = `Vybráno: ${selectedFileName}. Prohlížeč tento formát nebo kodek neumí načíst, proto nemůže zobrazit náhled ani zjistit rozlišení. Zadejte rozlišení ručně nebo zkuste podporované video. Soubor se nikam nenahrává.`;
 });
 
 function formatBitrate(rawValue) {

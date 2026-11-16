@@ -19,7 +19,7 @@
             <div class="file-picker">
                 <label for="videoFile">Vybrat lokální video pro náhled:</label>
                 <input type="file" id="videoFile" accept="video/*,.mkv,.mov,.mp4,.webm,.avi">
-                <small id="fileStatus">Soubor zůstává ve vašem prohlížeči, nikam se nenahrává.</small>
+                <small id="fileStatus" role="status" aria-live="polite">Soubor zůstává ve vašem prohlížeči, nikam se nenahrává.</small>
             </div>
 
             <div class="input-row">
@@ -63,7 +63,7 @@
 
     <div id="stageWrapper">
         <img id="bg" src="template.png" alt="Ukázkový obrázek" draggable="false">
-        <video id="previewVideo" muted playsinline preload="metadata" hidden></video>
+        <video id="previewVideo" muted playsinline preload="auto" hidden></video>
         <div id="selection"></div>
     </div>
 
