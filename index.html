@@ -23,7 +23,7 @@
             </div>
 
             <div class="input-row">
-                <span class="input-label">Video file:</span>
+                <label class="input-label" for="videoName">Video file:</label>
                 <input type="text" id="videoName" value="input" class="full-width" placeholder="Název bez koncovky">
                 <select id="videoExt" class="ext-select">
                     <option value=".mkv">.mkv</option>
@@ -33,30 +33,37 @@
                     <option value=".avi">.avi</option>
                 </select>
             </div>
-            
+            <small id="inputSource" class="value-source" data-state="default" aria-live="polite">Výchozí hodnota</small>
+
             <div class="input-row">
-                <span class="input-label">Output file:</span>
+                <label class="input-label" for="outputName">Output file:</label>
                 <input type="text" id="outputName" value="output" class="full-width" placeholder="Název bez koncovky">
                 <select id="outputExt" class="ext-select">
                     <option value=".mkv">.mkv</option>
                     <option value=".mp4">.mp4</option>
                 </select>
             </div>
-            
+            <small id="outputSource" class="value-source" data-state="default" aria-live="polite">Výchozí hodnota</small>
+
             <div style="margin-top: 10px;">
                 Rozlišení videa: <input type="number" id="videoWidth" value="1920" min="2" step="1" style="width: 70px;"> x
-                <input type="number" id="videoHeight" value="1080" min="2" step="1" style="width: 70px;"><br>
+                <input type="number" id="videoHeight" value="1080" min="2" step="1" style="width: 70px;">
+                <small id="resolutionSource" class="value-source inline-source" data-state="default" aria-live="polite">Výchozí hodnota</small><br>
                 Síla rozmazání: <input type="number" id="blurRadius" value="20" min="0" step="1" style="width: 60px;">
             </div>
         </div>
 
         <div class="control-group">
-            <strong>1. Zjistěte BPS video stopy:</strong><br>
-            <input type="text" id="probeCommand" readonly style="width: 100%;">
-            
-            <div style="margin-top: 15px;">
-                <strong>2. Vložte zjištěné BPS (skript zachová 80 % pro top kvalitu HEVC):</strong><br>
-                <input type="text" id="targetBitrate" value="3013982" style="width: 150px;">
+            <label for="bitrateMode"><strong>Datový tok videa:</strong></label>
+            <select id="bitrateMode" class="ext-select">
+                <option value="auto">Zjistit automaticky při spuštění příkazu</option>
+                <option value="manual">Zadat ručně</option>
+            </select>
+            <p id="bitrateSource" class="value-source bitrate-source" data-state="pending" aria-live="polite">BPS se zjistí až při spuštění příkazu v terminálu.</p>
+            <p class="bitrate-note">Příkaz použije 80 % datového toku vstupního videa pro HEVC. Hodnota sama o sobě nezaručuje konkrétní kvalitu.</p>
+            <div id="manualBitrate" hidden>
+                <label for="targetBitrate">Datový tok vstupního videa v bitech za sekundu (bps):</label>
+                <input type="number" id="targetBitrate" min="1" step="1" placeholder="např. 5962043">
             </div>
         </div>
     </div>

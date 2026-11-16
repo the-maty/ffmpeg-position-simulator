@@ -6,6 +6,14 @@ const fileStatus = document.getElementById("fileStatus");
 let videoUrl = null;
 let interaction = null;
 let selectedFileName = "";
+let resolutionEditedDuringLoad = false;
+let loadingVideoMetadata = false;
+
+function setValueSource(id, state, message) {
+    const label = document.getElementById(id);
+    label.setAttribute("data-state", state);
+    label.textContent = message;
+}
 
 // Výběr je uložen jako podíl celého snímku, nezávisle na velikosti náhledu.
 const selection = { x: 0.1, y: 0.1, w: 0.2, h: 0.15 };
@@ -54,6 +62,9 @@ document.getElementById("videoFile").addEventListener("change", event => {
     if (videoUrl) URL.revokeObjectURL(videoUrl);
     videoUrl = URL.createObjectURL(file);
     selectedFileName = file.name;
+    loadingVideoMetadata = true;
+    resolutionEditedDuringLoad = false;
+    setValueSource("resolutionSource", "pending", "Zjišťuji rozlišení…");
     const match = file.name.match(/^(.*)(\.[^.]+)$/);
     const ext = match ? match[2].toLowerCase() : "";
     const extSelect = document.getElementById("videoExt");
@@ -65,6 +76,8 @@ document.getElementById("videoFile").addEventListener("change", event => {
     document.getElementById("videoName").value = baseName;
     document.getElementById("outputName").value = `${baseName}_blurred`;
     document.getElementById("outputExt").value = ext === ".mp4" ? ".mp4" : ".mkv";
+    setValueSource("inputSource", "auto", "✓ Načteno z vybraného souboru");
+    setValueSource("outputSource", "auto", "✓ Automaticky vytvořený název");
     bg.hidden = false;
     video.hidden = true;
     fileStatus.textContent = `Vybráno: ${file.name}. Zjišťuji rozlišení a načítám náhled…`;
@@ -73,28 +86,29 @@ document.getElementById("videoFile").addEventListener("change", event => {
     generateCommand();
 });
 video.addEventListener("loadedmetadata", () => {
+    loadingVideoMetadata = false;
     if (!video.videoWidth || !video.videoHeight) {
+        if (!resolutionEditedDuringLoad) setValueSource("resolutionSource", "pending", "Rozlišení se nepodařilo zjistit");
         fileStatus.textContent = `Vybráno: ${selectedFileName}. Rozlišení se nepodařilo zjistit; zadejte ho ručně.`;
         return;
     }
-    document.getElementById("videoWidth").value = video.videoWidth;
-    document.getElementById("videoHeight").value = video.videoHeight;
+    if (!resolutionEditedDuringLoad) {
+        document.getElementById("videoWidth").value = video.videoWidth;
+        document.getElementById("videoHeight").value = video.videoHeight;
+        setValueSource("resolutionSource", "auto", "✓ Zjištěno z videa");
+    }
     bg.hidden = true;
     video.hidden = false;
     fileStatus.textContent = `Vybráno: ${selectedFileName} · Rozlišení: ${video.videoWidth} × ${video.videoHeight} px. Video zůstává v prohlížeči.`;
     generateCommand();
 });
 video.addEventListener("error", () => {
+    loadingVideoMetadata = false;
+    if (!resolutionEditedDuringLoad) setValueSource("resolutionSource", "pending", "Rozlišení se nepodařilo zjistit");
     bg.hidden = false;
     video.hidden = true;
     fileStatus.textContent = `Vybráno: ${selectedFileName}. Prohlížeč tento formát nebo kodek neumí načíst, proto nemůže zobrazit náhled ani zjistit rozlišení. Zadejte rozlišení ručně nebo zkuste podporované video. Soubor se nikam nenahrává.`;
 });
-
-function formatBitrate(rawValue) {
-    const value = rawValue.trim();
-    if (/^\d+$/.test(value)) return Math.round(Number(value) * 0.8 / 1000) + "k";
-    return value;
-}
 
 // Jednoduché uvozovky chrání i mezery a speciální znaky v názvech v POSIX shellu.
 function shellQuote(value) {
@@ -131,7 +145,6 @@ function generateCommand() {
     const output = document.getElementById("output");
     const videoName = fileName("videoName", "videoExt");
     const outputName = fileName("outputName", "outputExt");
-    document.getElementById("probeCommand").value = `ffprobe -v error -select_streams v:0 -show_entries stream_tags=BPS -of default=noprint_wrappers=1:nokey=1 ${shellQuote(videoName)}`;
     if (!Number.isInteger(videoW) || !Number.isInteger(videoH) || videoW < 2 || videoH < 2) {
         output.value = "Zadejte platné rozlišení alespoň 2 × 2 pixely.";
         return;
@@ -154,21 +167,47 @@ function generateCommand() {
     const overlayY = start("main_h", selection.y);
     const requestedRadius = Number(document.getElementById("blurRadius").value);
     const radius = Number.isFinite(requestedRadius) ? Math.max(0, Math.floor(requestedRadius)) : 0;
-    const bitrate = formatBitrate(document.getElementById("targetBitrate").value);
-    if (!/^\d+(?:\.\d+)?[kKmM]?$/.test(bitrate) || Number.parseFloat(bitrate) <= 0) {
-        output.value = "Zadejte platný bitrate, například 3013982 nebo 2400k.";
+    const mode = document.getElementById("bitrateMode").value;
+    document.getElementById("manualBitrate").hidden = mode !== "manual";
+    setValueSource("bitrateSource", mode === "manual" ? "manual" : "pending", mode === "manual"
+        ? "BPS zadáváš ručně."
+        : "BPS se zjistí až při spuštění příkazu v terminálu.");
+    const rawBitrate = document.getElementById("targetBitrate").value.trim();
+    if (mode === "manual" && (!/^[0-9]+$/.test(rawBitrate) || Number(rawBitrate) < 2 || !Number.isSafeInteger(Number(rawBitrate)))) {
+        output.value = "Zadejte platný datový tok vstupního videa v bps (alespoň 2).";
         return;
     }
     const filter = `[0:v]crop=w=${w}:h=${h}:x=${x}:y=${y},boxblur=luma_radius=min(${radius}\\,floor(min(w\\,h)/4)):luma_power=1[blur];[0:v][blur]overlay=x=${overlayX}:y=${overlayY},format=yuv420p[vout]`;
-    output.value = `ffmpeg -i ${shellQuote(videoName)} -filter_complex ${shellQuote(filter)} -map '[vout]' -map '0:a?' -c:v hevc_videotoolbox -b:v ${bitrate} -c:a copy ${shellQuote(outputName)}`;
+    const encoder = `ffmpeg -i ${shellQuote(videoName)} -filter_complex ${shellQuote(filter)} -map '[vout]' -map '0:a?' -c:v hevc_videotoolbox -b:v`;
+    if (mode === "manual") {
+        output.value = `${encoder} ${Math.floor(Number(rawBitrate) * 0.8)} -c:a copy ${shellQuote(outputName)}`;
+        return;
+    }
+    // BPS v tagu má přednost; pokud chybí, zkusíme bit_rate video stopy.
+    const probe = entry => `ffprobe -v error -select_streams v:0 -show_entries ${entry} -of default=noprint_wrappers=1:nokey=1 ${shellQuote(videoName)}`;
+    const calculate = `awk '/^[0-9]+$/ && $0 >= 2 { printf "%.0f", int($0 * 0.8); exit }'`;
+    output.value = `bps=$(${probe("stream_tags=BPS")} | ${calculate})\n` +
+        `if [ -z "$bps" ]; then bps=$(${probe("stream=bit_rate")} | ${calculate}); fi\n` +
+        `if [ -n "$bps" ]; then\n  ${encoder} "$bps" -c:a copy ${shellQuote(outputName)}\n` +
+        `else\n  printf '%s\\n' 'Datový tok videa se nepodařilo zjistit. Zvolte ruční zadání bps.' >&2\n  false\nfi`;
+
 }
 
-["targetBitrate", "videoName", "outputName", "videoExt", "outputExt", "videoWidth", "videoHeight", "blurRadius"]
+for (const [id, source] of [["videoName", "inputSource"], ["videoExt", "inputSource"],
+    ["outputName", "outputSource"], ["outputExt", "outputSource"],
+    ["videoWidth", "resolutionSource"], ["videoHeight", "resolutionSource"]]) {
+    document.getElementById(id).addEventListener("input", () => {
+        if (source === "resolutionSource" && loadingVideoMetadata) resolutionEditedDuringLoad = true;
+        setValueSource(source, "manual", "Upraveno ručně");
+    });
+}
+
+["bitrateMode", "targetBitrate", "videoName", "outputName", "videoExt", "outputExt", "videoWidth", "videoHeight", "blurRadius"]
     .forEach(id => document.getElementById(id).addEventListener("input", generateCommand));
 
 document.getElementById("copyBtn").addEventListener("click", async function () {
     const value = document.getElementById("output").value;
-    if (!value.startsWith("ffmpeg ")) return;
+    if (!value.startsWith("ffmpeg ") && !value.startsWith("bps=$(")) return;
     try {
         await navigator.clipboard.writeText(value);
         this.innerText = "Zkopírováno!";

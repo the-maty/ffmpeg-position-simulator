@@ -78,6 +78,7 @@ input:focus { outline: 1px solid var(--accent); }
     pointer-events: none;
 }
 #bg[hidden], #previewVideo[hidden] { display: none; }
+.bitrate-note { color: #aaa; font-size: 0.85em; line-height: 1.5; }
 .preview-note { color: #aaa; font-size: 0.85em; margin: 0 0 10px; }
 .file-picker { margin-top: 10px; }
 .file-picker label, .file-picker small { display: block; }
@@ -170,3 +171,16 @@ button:active { transform: scale(0.98); }
     background: var(--accent);
     cursor: nwse-resize;
 }
+
+.value-source {
+    display: block;
+    margin: 5px 0 0 85px;
+    color: #aaa;
+    font-size: 0.78em;
+}
+.value-source[data-state="auto"] { color: #7fe9a1; }
+.value-source[data-state="manual"] { color: #c6c6c6; }
+.value-source[data-state="pending"] { color: #f0c674; }
+.inline-source { display: inline-block; margin-left: 6px; }
+.bitrate-source { margin: 8px 0 0; }
+.input-row .full-width { min-width: 0; }
